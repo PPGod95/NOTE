@@ -3,10 +3,11 @@ package com.example.note;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -36,7 +37,9 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         init();
         loadSP();
+        viewClick();
     }
+
 
     private void init() {
         userName = findViewById(R.id.et_userName);
@@ -52,87 +55,120 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loadSP() {
-        sp = getSharedPreferences("userinfo",0);
+        sp = getSharedPreferences("userInfo", 0);
         ed = sp.edit();
-        boolean rem_pwd = sp.getBoolean("REMBER_PW",false);
-        boolean auto_login = sp.getBoolean("AUTO_LOGIN",false);
+        boolean rem_pwd = sp.getBoolean("REMEMBER_PW", false);
+        boolean auto_login = sp.getBoolean("AUTO_LOGIN", false);
         rememberPw.setChecked(rem_pwd);
         autoLogin.setChecked(auto_login);
-        String name = sp.getString("USER_NAME","");
-        String password = sp.getString("PASSWORD","");
-        if (rem_pwd){
+        String name = sp.getString("USER_NAME", "");
+        String password = sp.getString("PASSWORD", "");
+        if (rem_pwd) {
             userName.setText(name);
             passWord.setText(password);
         }
-        Intent intent = getIntent();
-        if (intent.getStringExtra("code")!=null){
-            if(intent.getStringExtra("code").equals("relogin")){
-                auto_login=false;
-            }
-        }
-        if(auto_login){
+
+        if (auto_login) {
             login();
         }
     }
 
+
     private void login() {
         userDB = new userDB(LoginActivity.this);
-        final String username=userName.getText().toString();
-        final String password=passWord.getText().toString();
-        Cursor cursor = userDB.query(username.trim(), password.trim());
+        final String username = userName.getText().toString();
+        final String password = passWord.getText().toString();
+        if (username.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "帐号不能为空", Toast.LENGTH_SHORT).show();
+            return;
+        } else if (password.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "密码不能为空", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Cursor cursor = userDB.query(username, password);
         if (cursor.moveToNext()) {
             Intent intent = new Intent();
-            intent.setClass(LoginActivity.this,MainActivity.class);
-            intent.putExtra("login_user",username);
+            intent.setClass(LoginActivity.this, MainActivity.class);
+            intent.putExtra("login_user", username);
 
             cursor.close();
-            if(rememberPw.isChecked()){
+            if (rememberPw.isChecked()) {
                 ed.putString("USER_NAME", username);
                 ed.putString("PASSWORD", password);
-                ed.putBoolean("REMEMBER_PW",true);
+                ed.putBoolean("REMEMBER_PW", true);
                 ed.commit();
             }
-            if(autoLogin.isChecked()){
-                ed.putBoolean("AUTO_LOGIN",true);
+            if (autoLogin.isChecked()) {
+                ed.putBoolean("AUTO_LOGIN", true);
                 ed.commit();
             }
             startActivity(intent);
             finish();
-        }else{
-//            AlertDialog.Builder builder=new AlertDialog.Builder(LoginActivity.this);
-//            builder.setMessage("找不到该用户或者密码错误，是否注册该用户?");
-//            builder.setTitle("是否注册");
-//            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface dialog, int which) {
-//                    userdao.insertUser(username,password);
-//                    Toast.makeText(LoginActivity.this, "注册成功，请尝试登录", Toast.LENGTH_SHORT).show();
-//                }
-//            });
-//            builder.setNegativeButton("取消",null);
-//            builder.create().show();
+        } else {
             Toast.makeText(LoginActivity.this, "密码验证失败，请重新验证登录", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void goReg() {
-        userReg.setTextColor(Color.rgb(0, 0, 0));
         Intent intent = new Intent(getApplicationContext(), RegActivity.class);
         startActivity(intent);
         finish();
 
     }
 
+    private void viewClick() {
+        userReg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                goReg();
+            }
+        });
+
+        login.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                login();
+            }
+        });
+
+        touristLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                intent.putExtra("login_user", "tourist");
+                startActivity(intent);
+            }
+        });
+
+        autoLogin.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean b) {
+                if (autoLogin.isChecked()) {
+                    rememberPw.setChecked(true);
+                }
+                ed.putBoolean("AUTO_LOGIN", autoLogin.isChecked());
+                ed.commit();
+            }
+        });
+        rememberPw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean b) {
+                ed.putBoolean("REMEMBER_PW", rememberPw.isChecked());
+                ed.commit();
+            }
+        });
+
+    }
+
     @Override
-    public void onBackPressed()
-    {
-        if (mBackPressed + TIME_INTERVAL > System.currentTimeMillis())
-        {
+    public void onBackPressed() {
+        if (mBackPressed + TIME_INTERVAL > System.currentTimeMillis()) {
             super.onBackPressed();
             System.exit(0);
             return;
+        } else {
+            Toast.makeText(getBaseContext(), "再按一次返回退出程序", Toast.LENGTH_SHORT).show();
         }
-        else { Toast.makeText(getBaseContext(), "再按一次返回退出程序", Toast.LENGTH_SHORT).show(); }
 
         mBackPressed = System.currentTimeMillis();
     }

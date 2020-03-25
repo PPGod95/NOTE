@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  * Created by Haoran Peng on 2020/3/24.
  */
 public class userDB {
+
     Context context;
     userDBHelper dbHelper;
     public userDB(Context context){
@@ -25,16 +26,6 @@ public class userDB {
         SQLiteDatabase sqlDB= dbHelper.getReadableDatabase();
         String sql="select*from user where username=?and password=?";
         return sqlDB.rawQuery(sql,new String[]{username,password});
-    }
-
-    public int updatePw(String username,String password,String newpassword){
-        SQLiteDatabase sqlDB= dbHelper.getWritableDatabase();
-        ContentValues cv = new ContentValues();
-        cv.put("password",newpassword);
-        int i;
-        i = sqlDB.update("user", cv, "username=? and password=?", new String[]{username,password});
-        sqlDB.close();
-        return i;
     }
 
 
