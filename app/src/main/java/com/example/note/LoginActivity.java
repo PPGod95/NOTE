@@ -2,6 +2,8 @@ package com.example.note;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -12,6 +14,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.note.DB.userDB;
+
 public class LoginActivity extends AppCompatActivity {
 
     private EditText userName, passWord;
@@ -20,7 +24,7 @@ public class LoginActivity extends AppCompatActivity {
     private CheckBox rememberPw, autoLogin;
     private ImageView iv_icon;
     private Button login;
-    private UserDao userdao;
+    private userDB userDB;
     private SharedPreferences sp;
     private SharedPreferences.Editor ed;
     private static final int TIME_INTERVAL = 2000;
@@ -72,7 +76,51 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void login() {
-        userdao = new UserDao(LoginActivity.this);
+        userDB = new userDB(LoginActivity.this);
+        final String username=userName.getText().toString();
+        final String password=passWord.getText().toString();
+        Cursor cursor = userDB.query(username.trim(), password.trim());
+        if (cursor.moveToNext()) {
+            Intent intent = new Intent();
+            intent.setClass(LoginActivity.this,MainActivity.class);
+            intent.putExtra("login_user",username);
+
+            cursor.close();
+            if(rememberPw.isChecked()){
+                ed.putString("USER_NAME", username);
+                ed.putString("PASSWORD", password);
+                ed.putBoolean("REMEMBER_PW",true);
+                ed.commit();
+            }
+            if(autoLogin.isChecked()){
+                ed.putBoolean("AUTO_LOGIN",true);
+                ed.commit();
+            }
+            startActivity(intent);
+            finish();
+        }else{
+//            AlertDialog.Builder builder=new AlertDialog.Builder(LoginActivity.this);
+//            builder.setMessage("找不到该用户或者密码错误，是否注册该用户?");
+//            builder.setTitle("是否注册");
+//            builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+//                @Override
+//                public void onClick(DialogInterface dialog, int which) {
+//                    userdao.insertUser(username,password);
+//                    Toast.makeText(LoginActivity.this, "注册成功，请尝试登录", Toast.LENGTH_SHORT).show();
+//                }
+//            });
+//            builder.setNegativeButton("取消",null);
+//            builder.create().show();
+            Toast.makeText(LoginActivity.this, "密码验证失败，请重新验证登录", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void goReg() {
+        userReg.setTextColor(Color.rgb(0, 0, 0));
+        Intent intent = new Intent(getApplicationContext(), RegActivity.class);
+        startActivity(intent);
+        finish();
+
     }
 
     @Override
